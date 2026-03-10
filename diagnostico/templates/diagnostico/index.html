@@ -405,7 +405,7 @@ function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.
 
 function getCsrf(){return document.cookie.split(';').map(c=>c.trim()).find(c=>c.startsWith('csrftoken='))?.split('=')[1]||'';}
 
-async function callClaude(prompt,jsonMode=false){const apiKey=document.getElementById('api-key-input').value.trim();const res=await fetch("/api/claude/",{method:"POST",headers:{"Content-Type":"application/json","X-CSRFToken":getCsrf()},body:JSON.stringify({prompt,jsonMode,apiKey})});const data=await res.json();if(data.error)throw new Error(data.error);return data.text||"";}
+async function callClaude(prompt,jsonMode=false){const apiKey=document.getElementById('api-key-input').value.trim();const res=await fetch("/claude/",{method:"POST",headers:{"Content-Type":"application/json","X-CSRFToken":getCsrf()},body:JSON.stringify({prompt,jsonMode,apiKey})});const data=await res.json();if(data.error)throw new Error(data.error);return data.text||"";}
 
 function parseJSON(text){const clean=text.replace(/```json|```/g,"").trim();const match=clean.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);return JSON.parse(match?match[0]:clean);}
 
