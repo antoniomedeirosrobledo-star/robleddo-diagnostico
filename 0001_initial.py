@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Robleddo Consulting — Diagnóstico de Postagem</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:#F3F4F6; --surface:#FFFFFF; --surface-2:#FAFAFA;
+  --border:#E5E7EB; --border-2:#F0F1F3;
+  --t1:#0D1117; --t2:#374151; --t3:#6B7280; --t4:#9CA3AF;
+  --brand:#D4860A; --brand-bg:#FFFBEB;
+  --neg:#B91C1C; --neg-bg:#FEF2F2; --neg-bd:#FECACA;
+  --pos:#166534; --pos-bg:#F0FDF4; --pos-bd:#BBF7D0;
+  --neu:#6B7280; --neu-bg:#F9FAFB; --neu-bd:#E5E7EB;
+  --warn:#92400E; --warn-bg:#FFF7ED; --warn-bd:#FED7AA;
+}
+body { min-height:100vh; font-family:'Plus Jakarta Sans','Segoe UI',sans-serif; -webkit-font-smoothing:antialiased; background:var(--bg); color:var(--t1); }
+button { cursor:pointer; font-family:inherit; transition:all .2s; }
+input,textarea,select { background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--t1); font-family:inherit; font-size:14px; padding:10px 12px; width:100%; outline:none; transition:border .2s; }
+input:focus,textarea:focus,select:focus { border-color:var(--brand); }
+textarea { resize:vertical; }
+.btn-primary { background:var(--t1); border:none; border-radius:9px; color:#fff; font-size:15px; font-weight:800; padding:13px 24px; }
+.btn-primary:hover { opacity:.85; }
+.btn-primary:disabled { background:var(--border); color:var(--t4); cursor:not-allowed; }
+.label { color:var(--t4); display:block; font-size:10px; font-weight:700; letter-spacing:1px; margin-bottom:6px; text-transform:uppercase; }
+.section { background:var(--surface); border:1px solid var(--border); border-radius:14px; margin-bottom:14px; overflow:hidden; }
+.section-header { border-bottom:1px solid var(--border); padding:14px 20px; background:var(--surface-2); }
+.section-title { color:var(--t4); font-size:10px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; }
+.section-body { padding:20px; }
+.setup-header { align-items:center; background:var(--t1); border-bottom:1px solid #1E293B; display:flex; height:58px; justify-content:space-between; padding:0 40px; position:sticky; top:0; z-index:100; border-radius:0; }
+.logo-setup { font-family:'Instrument Serif',serif; font-size:20px; }
+.tag-item { align-items:center; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; display:flex; gap:10px; margin-bottom:8px; padding:10px 12px; }
+.progress-bar-wrap { background:var(--border); border-radius:10px; height:6px; margin:12px 0; overflow:hidden; }
+.progress-bar-fill { background:var(--brand); border-radius:10px; height:100%; transition:width .4s ease; width:0%; }
+.step-item { align-items:center; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; display:flex; gap:10px; margin-bottom:8px; padding:10px 14px; }
+.upload-zone { border:2px dashed var(--border); border-radius:8px; cursor:pointer; padding:24px; text-align:center; transition:all .2s; background:var(--surface-2); }
+.upload-zone:hover { border-color:var(--brand); }
+.upload-zone.has-file { background:var(--brand-bg); border-color:var(--brand); }
+.api-key-notice { background:var(--brand-bg); border:1px solid #FDE68A; border-radius:8px; font-size:12px; color:var(--warn); padding:10px 14px; margin-bottom:16px; line-height:1.6; }
+.page { display:none; }
+.page.active { display:block; }
+/* report */
+.r-wrap { max-width:980px; margin:0 auto; padding:32px 20px; display:flex; flex-direction:column; gap:14px; }
+.report-header { background:var(--t1); border-radius:16px; padding:20px 28px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+.logo-word { font-family:'Plus Jakarta Sans',sans-serif; font-size:18px; font-weight:800; color:#fff; letter-spacing:-.5px; }
+.logo-word span { color:var(--brand); }
+.logo-sub { font-size:11px; color:#4B5563; margin-top:4px; font-weight:500; }
+.r-btns { display:flex; gap:8px; }
+.rbtn { font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; font-weight:700; border-radius:8px; padding:8px 16px; cursor:pointer; border:none; }
+.rbtn:hover { opacity:.8; }
+.rbtn-wire { background:transparent; border:1px solid #2D3748; color:#6B7280; }
+.rbtn-brand { background:var(--brand); color:#fff; }
+.post-context { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:24px; display:grid; grid-template-columns:205px 1fr; gap:24px; align-items:start; }
+.post-info-block { display:flex; flex-direction:column; gap:14px; }
+.post-label { font-size:9px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--t4); margin-bottom:4px; }
+.post-title { font-size:15px; font-weight:800; color:var(--t1); line-height:1.4; }
+.post-meta-row { display:flex; flex-direction:column; gap:6px; }
+.post-meta-item { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--t3); }
+.post-meta-item a { color:var(--brand); font-weight:600; text-decoration:none; }
+.post-meta-item a:hover { text-decoration:underline; }
+.post-stats { display:flex; gap:16px; padding:14px 16px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; flex-wrap:wrap; }
+.post-stat { display:flex; flex-direction:column; gap:2px; }
+.post-stat-val { font-size:18px; font-weight:800; color:var(--t1); letter-spacing:-1px; line-height:1; }
+.post-stat-lbl { font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--t4); }
+.post-screenshot { border-radius:10px; overflow:hidden; border:1px solid var(--border); background:var(--surface-2); min-height:180px; display:flex; align-items:center; justify-content:center; }
+.post-screenshot img { width:100%; height:100%; object-fit:cover; display:block; border-radius:10px; }
+.post-screenshot-empty { font-size:32px; color:var(--t4); }
+.post-badge { border-radius:6px; padding:3px 10px; font-size:9px; font-weight:800; letter-spacing:.8px; text-transform:uppercase; white-space:nowrap; }
+.badge-crit { background:var(--neg-bg); color:var(--neg); border:1px solid var(--neg-bd); }
+.badge-warn { background:var(--warn-bg); color:var(--warn); border:1px solid var(--warn-bd); }
+.badge-ok   { background:var(--pos-bg); color:var(--pos); border:1px solid var(--pos-bd); }
+.score-bar { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px 26px; display:flex; align-items:center; gap:24px; flex-wrap:wrap; }
+.score-main { display:flex; flex-direction:column; gap:2px; flex-shrink:0; }
+.score-label { font-size:9px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:var(--t4); }
+.score-value { font-family:'Plus Jakarta Sans',sans-serif; font-size:44px; line-height:1; font-weight:800; letter-spacing:-2px; }
+.score-desc { font-size:11px; color:var(--t3); font-weight:500; margin-top:2px; }
+.score-div { width:1px; height:60px; background:var(--border); flex-shrink:0; }
+.score-therm { flex:1; min-width:180px; }
+.therm-labels { font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--t4); margin-bottom:8px; display:flex; justify-content:space-between; }
+.therm-track { height:10px; border-radius:99px; background:linear-gradient(90deg,var(--pos) 0%,#FCD34D 45%,var(--neg) 100%); position:relative; }
+.therm-marker { position:absolute; width:16px; height:16px; background:var(--t1); border:3px solid #fff; border-radius:50%; top:50%; transform:translate(-50%,-50%); box-shadow:0 2px 6px rgba(0,0,0,.25); }
+.therm-cap { font-size:10px; font-weight:700; margin-top:6px; }
+.score-chips { display:flex; flex-direction:column; gap:5px; flex-shrink:0; }
+.chip { display:flex; align-items:center; gap:7px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:6px 12px; font-size:10.5px; color:var(--t2); font-weight:600; white-space:nowrap; }
+.chip-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.sc { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px 20px; position:relative; overflow:hidden; }
+.sc::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:14px 14px 0 0; }
+.sc.neg::before { background:var(--neg); }
+.sc.pos::before { background:var(--pos); }
+.sc.neu::before { background:var(--border); }
+.sc.tot::before { background:var(--brand); }
+.sc-label { font-size:10px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--t4); margin-bottom:6px; }
+.sc-num { font-size:38px; font-weight:800; line-height:1; letter-spacing:-2px; }
+.sc.neg .sc-num { color:var(--neg); }
+.sc.pos .sc-num { color:var(--pos); }
+.sc.neu .sc-num { color:var(--t4); }
+.sc.tot .sc-num { color:var(--t1); }
+.sc-sub { font-size:11px; color:var(--t4); margin-top:5px; font-weight:500; }
+.r-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:22px 26px; }
+.ct { font-size:10px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:var(--t4); margin-bottom:16px; display:flex; align-items:center; gap:10px; }
+.ct::after { content:''; flex:1; height:1px; background:var(--border-2); }
+.r-summary { font-size:13.5px; line-height:1.85; color:var(--t2); white-space:pre-line; }
+.r-summary strong { color:var(--t1); font-weight:700; }
+.actions-list { display:flex; flex-direction:column; gap:10px; }
+.action-item { display:flex; gap:16px; padding:16px 18px; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; align-items:flex-start; transition:opacity .2s; }
+.action-item.done { opacity:.45; }
+.action-item.done .action-title { text-decoration:line-through; color:var(--t4); }
+.action-check { width:18px; height:18px; border:2px solid var(--border); border-radius:5px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; transition:all .15s; background:var(--surface); }
+.action-check:hover { border-color:var(--pos); }
+.action-check.checked { background:var(--pos); border-color:var(--pos); color:#fff; font-size:10px; }
+.copy-btn { font-family:'Plus Jakarta Sans',sans-serif; font-size:10px; font-weight:700; background:var(--surface-2); border:1px solid var(--border); border-radius:7px; color:var(--t3); padding:5px 12px; cursor:pointer; transition:all .15s; }
+.copy-btn:hover { background:var(--t1); color:#fff; border-color:var(--t1); }
+.copy-btn.copied { background:var(--pos-bg); color:var(--pos); border-color:var(--pos-bd); }
+.delta-up { font-size:9px; font-weight:800; padding:1px 5px; border-radius:4px; background:var(--neg-bg); color:var(--neg); margin-left:6px; }
+.delta-down { font-size:9px; font-weight:800; padding:1px 5px; border-radius:4px; background:var(--pos-bg); color:var(--pos); margin-left:6px; }
+.delta-same { font-size:9px; font-weight:800; padding:1px 5px; border-radius:4px; background:var(--neu-bg); color:var(--neu); margin-left:6px; }
+.leg-row { display:flex; align-items:center; gap:9px; cursor:pointer; padding:5px 8px; border-radius:8px; transition:background .15s; border:1px solid transparent; }
+.leg-row:hover { background:var(--surface-2); }
+.leg-row.active { background:var(--brand-bg); border-color:#FDE68A; }
+.theme-filter-active { background:var(--brand-bg); border:1px solid var(--brand); border-radius:7px; padding:3px 10px; font-size:10px; font-weight:700; color:var(--brand); cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
+.theme-filter-active:hover { opacity:.8; }
+.action-left { display:flex; flex-direction:column; align-items:center; gap:6px; flex-shrink:0; }
+.action-n { width:26px; height:26px; background:var(--t1); color:#fff; border-radius:8px; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.prazo { font-size:8px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; padding:2px 6px; border-radius:4px; text-align:center; white-space:nowrap; }
+.prazo-hoje { background:var(--neg-bg); color:var(--neg); border:1px solid var(--neg-bd); }
+.prazo-7    { background:var(--warn-bg); color:var(--warn); border:1px solid var(--warn-bd); }
+.prazo-30   { background:#EFF6FF; color:#1D4ED8; border:1px solid #BFDBFE; }
+.prazo-cont { background:var(--neu-bg); color:var(--neu); border:1px solid var(--neu-bd); }
+.action-type { font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--t4); margin-bottom:4px; }
+.action-title { font-size:13px; font-weight:700; color:var(--t1); margin-bottom:5px; line-height:1.3; }
+.action-desc { font-size:12px; color:var(--t3); line-height:1.65; }
+.two-col { display:grid; grid-template-columns:1.15fr 0.85fr; gap:14px; }
+.bar-row { display:flex; align-items:center; gap:10px; margin-bottom:11px; cursor:pointer; padding:5px 7px; border-radius:8px; transition:background .15s; border:1px solid transparent; }
+.bar-row:last-child { margin-bottom:0; }
+.bar-row:hover { background:var(--surface-2); }
+.bar-row.active { background:var(--brand-bg); border-color:#FDE68A; }
+.bar-row.active .bar-name { color:var(--t1); font-weight:700; }
+.bar-dot { width:11px; height:11px; border-radius:50%; flex-shrink:0; }
+.bar-name { font-size:11px; color:var(--t2); font-weight:500; flex:1; line-height:1.3; }
+.bar-track { width:72px; height:4px; background:var(--border-2); border-radius:99px; overflow:hidden; flex-shrink:0; }
+.bar-fill { height:100%; border-radius:99px; }
+.bar-pct { font-size:10px; color:var(--t4); font-weight:700; width:26px; text-align:right; }
+.donut-area { display:flex; align-items:center; justify-content:center; gap:22px; flex:1; margin-top:10px; }
+.donut-wrap { position:relative; width:160px; height:160px; flex-shrink:0; }
+.donut-center { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; pointer-events:none; }
+.donut-center-label { font-size:9px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--t4); display:block; }
+.donut-center-value { font-size:26px; font-weight:800; letter-spacing:-1.5px; line-height:1.1; display:block; }
+.donut-center-sub { font-size:8px; font-weight:600; letter-spacing:.8px; text-transform:uppercase; color:var(--t4); display:block; margin-top:1px; }
+.leg { display:flex; flex-direction:column; gap:12px; }
+.leg-row { display:flex; align-items:center; gap:9px; }
+.leg-dot { width:9px; height:9px; border-radius:3px; flex-shrink:0; }
+.leg-label { font-size:11.5px; color:var(--t3); font-weight:500; }
+.leg-val { font-size:13px; color:var(--t1); font-weight:800; margin-left:4px; }
+.leg-pct { font-size:9px; font-weight:700; margin-left:3px; color:var(--t4); }
+.r-table { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+.r-tbar { padding:14px 22px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+.r-title { font-size:12px; font-weight:700; color:var(--t1); display:flex; align-items:center; gap:8px; }
+.r-cnt { font-size:10px; font-weight:700; color:var(--t4); background:var(--bg); border:1px solid var(--border); padding:3px 10px; border-radius:20px; }
+.r-srch { display:flex; align-items:center; gap:6px; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:7px 12px; }
+.r-srch input { background:transparent; border:none; color:var(--t4); font-size:11px; padding:0; width:160px; font-family:'Plus Jakarta Sans',sans-serif; }
+.r-srch input:focus { outline:none; }
+.filt-row { display:flex; gap:6px; padding:10px 22px; border-bottom:1px solid var(--border); background:var(--surface-2); flex-wrap:wrap; }
+.fb { font-family:'Plus Jakarta Sans',sans-serif; font-size:10px; font-weight:700; border-radius:20px; padding:4px 12px; cursor:pointer; border:1px solid var(--border); background:var(--surface); color:var(--t3); }
+.fb.on { background:var(--t1); color:#fff; border-color:var(--t1); }
+.r-th { display:grid; grid-template-columns:40px 1fr 100px 1fr; padding:9px 22px; background:var(--surface-2); border-bottom:1px solid var(--border); }
+.r-th span { font-size:9px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--t4); }
+.r-tr { display:grid; grid-template-columns:40px 1fr 100px 1fr; padding:12px 22px; border-bottom:1px solid var(--border-2); align-items:center; }
+.r-tr:hover { background:var(--surface-2); }
+.r-tr:last-child { border-bottom:none; }
+.tr-num { font-size:11px; color:var(--t4); font-weight:600; }
+.tr-comment { font-size:12.5px; color:var(--t2); line-height:1.45; padding-right:12px; }
+.pill { display:inline-flex; align-items:center; padding:3px 9px; border-radius:5px; font-size:9px; font-weight:800; letter-spacing:.8px; text-transform:uppercase; white-space:nowrap; }
+.p-neg { background:var(--neg-bg); color:var(--neg); border:1px solid var(--neg-bd); }
+.p-pos { background:var(--pos-bg); color:var(--pos); border:1px solid var(--pos-bd); }
+.p-neu { background:var(--neu-bg); color:var(--neu); border:1px solid var(--neu-bd); }
+.tpill { display:inline-block; padding:3px 9px; border-radius:5px; font-size:9.5px; font-weight:600; background:var(--bg); color:var(--t3); border:1px solid var(--border); line-height:1.4; }
+.pag-r { display:flex; align-items:center; gap:8px; justify-content:center; padding:12px 22px; border-top:1px solid var(--border); }
+.pb { background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--t2); font-size:13px; padding:6px 14px; font-family:'Plus Jakarta Sans',sans-serif; }
+.pb:disabled { opacity:.4; cursor:not-allowed; }
+.r-footer { text-align:center; font-size:11px; color:var(--t4); padding:6px; }
+.r-footer b { color:var(--brand); font-weight:700; }
+
+/* ── PRINT STYLES ── */
+@page {
+  size: A4 portrait;
+  margin: 14mm 14mm 14mm 14mm;
+}
+@media print {
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  body { background: #fff !important; }
+
+  /* Hide everything except the report */
+  .page { display: none !important; }
+  #report-page { display: block !important; }
+
+  /* Hide interactive UI */
+  .r-btns,
+  .r-srch,
+  .filt-row,
+  .pag-r,
+  .action-check,
+  #copy-btn,
+  #r-theme-filter-badge,
+  .copy-btn { display: none !important; }
+
+  /* Remove shadows and adjust layout for print */
+  .r-wrap { max-width: 100% !important; padding: 0 !important; }
+  .card, .two-col, .post-context, .sc, .therm-card, .summary-card, .actions-card, .two-col > * {
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+
+  /* Page breaks */
+  .post-context { break-after: page; }
+  .summary-card { break-after: page; }
+  .two-col { break-after: page; }
+
+  /* Table */
+  #r-tbody .r-tr { break-inside: avoid; }
+  .r-table-wrap { break-before: page; }
+
+  /* Fonts readable at print */
+  body { font-size: 10pt !important; }
+  .sc-num { font-size: 22pt !important; }
+  .therm-pct { font-size: 22pt !important; }
+  .r-tr, .r-th { font-size: 8pt !important; padding: 6px 10px !important; }
+  .summary-text { font-size: 10pt !important; line-height: 1.7 !important; }
+  .action-title { font-size: 10pt !important; }
+  .action-desc { font-size: 9pt !important; }
+  .bar-label { font-size: 9pt !important; }
+
+  /* Report header stays on every page */
+  .report-header { break-inside: avoid; position: running(header); }
+}
+</style>
+</head>
+<body>
+
+<div class="page active" id="setup-page">
+  <div class="setup-header">
+    <div class="logo-setup"><span style="color:#fff;">Robleddo</span><em style="color:var(--brand);font-style:italic;"> Consulting</em></div>
+    <div id="header-actions"></div>
+  </div>
+  <div style="max-width:680px;margin:0 auto;padding:40px 20px;">
+    <div style="margin-bottom:24px;">
+      <h2 style="font-size:20px;font-weight:800;color:var(--t1);">✨ Diagnóstico de Postagem</h2>
+      <p style="color:var(--t3);font-size:13px;margin-top:4px;">Análise estratégica de comentários via IA</p>
+    </div>
+    <div class="section">
+      <div class="section-header"><span class="section-title">🔑 Chave da API Anthropic</span></div>
+      <div class="section-body">
+        <div class="api-key-notice">A chave é usada diretamente no navegador e <strong style="color:var(--accent);">nunca é salva</strong> no servidor.</div>
+        <input type="password" id="api-key-input" placeholder="sk-ant-..." oninput="checkCanExecute()">
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header"><span class="section-title">🔗 Postagem</span></div>
+      <div class="section-body">
+        <div style="margin-bottom:14px;"><label class="label">URL do Instagram</label><input type="text" id="url-input" placeholder="https://www.instagram.com/p/..."></div>
+        <div style="margin-bottom:14px;"><label class="label">Contexto</label><input type="text" id="context-input" placeholder="Ex: Prefeitura de Natal, gestão Paulinho Freire 2025"></div>
+        <div><label class="label">Legenda da Postagem <span style="color:var(--t4);font-weight:400;font-size:9px;letter-spacing:0;text-transform:none;">(cole aqui a legenda do Instagram — melhora muito a análise)</span></label><textarea id="caption-input" rows="4" placeholder="Cole aqui a legenda completa da postagem..."></textarea></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header"><span class="section-title">📸 Screenshot da Postagem</span></div>
+      <div class="section-body">
+        <div class="upload-zone" id="screenshot-zone" onclick="document.getElementById('screenshot-input').click()">
+          <div id="screenshot-placeholder"><div style="font-size:32px;margin-bottom:8px;">📸</div><div style="font-size:14px;font-weight:700;">Clique para adicionar o print</div><div style="color:var(--t4);font-size:12px;margin-top:4px;">JPG, PNG, WEBP</div></div>
+          <div id="screenshot-preview-wrap" style="display:none;"><img id="screenshot-preview-img" style="border-radius:6px;display:block;margin:0 auto 8px;max-height:200px;max-width:100%;"><div id="screenshot-name" style="color:var(--brand);font-size:12px;font-weight:700;"></div><div style="color:var(--t4);font-size:11px;margin-top:2px;">Clique para trocar</div></div>
+        </div>
+        <input type="file" id="screenshot-input" accept="image/*" style="display:none;">
+        <button id="screenshot-remove" onclick="removeScreenshot()" style="background:none;border:none;color:var(--red-d);font-size:12px;margin-top:6px;display:none;">× Remover</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header"><span class="section-title">📊 Comentários (Excel)</span></div>
+      <div class="section-body">
+        <div class="upload-zone" id="excel-zone" onclick="document.getElementById('excel-input').click()">
+          <div id="excel-placeholder"><div style="font-size:32px;margin-bottom:8px;">📁</div><div style="font-size:14px;font-weight:700;">Clique para carregar o Excel</div><div style="color:var(--t4);font-size:12px;margin-top:4px;">.xlsx / .xls</div></div>
+          <div id="excel-loaded" style="display:none;"><div style="font-size:28px;margin-bottom:6px;">✅</div><div id="excel-filename" style="color:var(--accent);font-size:14px;font-weight:700;"></div><div id="excel-count" style="color:var(--t4);font-size:12px;margin-top:4px;"></div></div>
+        </div>
+        <input type="file" id="excel-input" accept=".xlsx,.xls,.csv" style="display:none;">
+        <div id="col-selector-wrap" style="display:none;margin-top:12px;">
+          <label class="label">Coluna dos comentários <span id="col-count" style="color:var(--accent);"></span></label>
+          <select id="col-selector"></select>
+          <div id="col-preview" style="background:var(--surface-2);border:1px solid var(--border);border-radius:6px;margin-top:8px;padding:8px 10px;display:none;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header"><span class="section-title">🎯 Critério de Análise</span></div>
+      <div class="section-body">
+        <textarea id="criterion-input" rows="4" placeholder="Ex: Quero entender o sentimento em relação à gestão do prefeito Paulinho Freire..." oninput="checkCanExecute()"></textarea>
+        <div id="criterion-counter" style="color:var(--t4);font-size:11px;margin-top:4px;">0 / 30 caracteres mínimos</div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header"><span class="section-title">🏷 Tags Principais</span></div>
+      <div class="section-body">
+        <div id="tags-list"></div>
+        <div style="background:var(--surface-2);border:1px dashed var(--border);border-radius:8px;padding:14px;margin-top:4px;">
+          <input type="text" id="new-tag-name" placeholder="Nome da tag (ex: APOIADOR DE ÁLVARO)" style="margin-bottom:8px;">
+          <input type="text" id="new-tag-desc" placeholder="Quando usar esta tag..." style="margin-bottom:10px;">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <span style="color:var(--t3);font-size:12px;">Cor:</span>
+            <div id="color-picker" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+            <button onclick="addTag()" style="margin-left:auto;padding:6px 16px;font-size:12px;background:var(--t1);border:none;border-radius:8px;color:#fff;font-weight:700;">+ Adicionar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="btn-primary" id="execute-btn" onclick="executeAnalysis()" disabled style="width:100%;padding:16px;font-size:16px;border-radius:10px;">⚡ Executar Diagnóstico</button>
+  </div>
+</div>
+
+<div class="page" id="processing-page">
+  <div style="max-width:480px;margin:0 auto;padding:100px 24px;text-align:center;color:var(--t1);">
+    <div style="font-size:52px;margin-bottom:20px;">🔬</div>
+    <h2 style="font-size:20px;font-weight:900;margin-bottom:8px;color:var(--t1);">Processando diagnóstico</h2>
+    <p id="processing-log" style="color:var(--t3);font-size:14px;margin-bottom:28px;">Iniciando...</p>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-fill"></div></div>
+    <div id="progress-pct" style="color:var(--brand);font-size:13px;font-weight:700;margin-bottom:24px;">0%</div>
+    <div id="steps-list" style="text-align:left;"></div>
+  </div>
+</div>
+
+<div class="page" id="report-page">
+  <div class="r-wrap">
+    <div class="report-header">
+      <div><div class="logo-word">ROBLEDDO <span>CONSULTING</span></div><div class="logo-sub" id="r-header-sub">Diagnóstico de Postagem</div></div>
+      <div class="r-btns">
+        <button class="rbtn rbtn-wire" onclick="exportExcel()">⬇ Excel</button>
+        <button class="rbtn rbtn-wire" onclick="exportPDF()" id="btn-pdf">⬇ PDF</button>
+        <button class="rbtn rbtn-wire" onclick="shareReport()" id="btn-share">🔗 Gerar Link</button>
+        <button class="rbtn rbtn-brand" onclick="newAnalysis()">← Nova Análise</button>
+      </div>
+    </div>
+    <div class="post-context">
+      <div class="post-screenshot" id="r-thumb">
+        <span class="post-screenshot-empty">📸</span>
+      </div>
+      <div class="post-info-block">
+        <div>
+          <div class="post-label">Postagem Analisada</div>
+          <div class="post-title" id="r-post-title">—</div>
+        </div>
+        <div class="post-meta-row" id="r-post-meta"></div>
+        <div class="post-stats" id="r-post-stats"></div>
+        <div><div class="post-badge badge-warn" id="r-post-badge" style="display:inline-flex;">—</div></div>
+      </div>
+    </div>
+    <div class="score-bar">
+      <div class="score-main"><div class="score-label">Índice de Rejeição</div><div class="score-value" id="r-score-val">—</div><div class="score-desc" id="r-score-desc">—</div></div>
+      <div class="score-div"></div>
+      <div class="score-therm">
+        <div class="therm-labels"><span>Favorável</span><span>Neutro</span><span>Crítico</span></div>
+        <div class="therm-track"><div class="therm-marker" id="r-therm-marker" style="left:50%;"></div></div>
+        <div class="therm-cap" id="r-therm-cap"></div>
+      </div>
+      <div class="score-div"></div>
+      <div class="score-chips" id="r-chips"></div>
+    </div>
+    <div class="stats-row" id="r-stat-cards"></div>
+    <div class="r-card"><div class="ct">Análise Estratégica</div><div class="r-summary" id="r-summary-text">—</div></div>
+    <div class="r-card"><div class="ct">Decisões e Ações Concretas</div><div class="actions-list" id="r-actions"></div></div>
+    <div class="two-col">
+      <div class="r-card"><div class="ct">Temas Identificados</div><div id="r-bars"></div></div>
+      <div class="r-card" style="display:flex;flex-direction:column;"><div class="ct">Distribuição por Tag</div><div class="donut-area"><div class="donut-wrap"><canvas id="r-donut" width="160" height="160" style="width:160px;height:160px;flex-shrink:0;cursor:pointer;" title="Clique para filtrar por tag"></canvas><div class="donut-center" id="donut-center-text"></div></div><div class="leg" id="r-leg"></div></div></div>
+    </div>
+    <div class="r-table">
+      <div class="r-tbar">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div class="r-title">Comentários <span class="r-cnt" id="r-count">0</span></div>
+          <span id="r-theme-filter-badge" style="display:none;"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="copy-btn" id="copy-btn" onclick="copyFiltered()">📋 Copiar</button>
+          <div class="r-srch">🔍 <input type="text" id="search-input" placeholder="Buscar comentário..." oninput="applyFilters()"></div>
+        </div>
+      </div>
+      <div class="filt-row" id="r-filt-row"></div>
+      <div class="r-th"><span>Nº</span><span>Comentário</span><span>Tag</span><span>Tema</span></div>
+      <div id="r-tbody"></div>
+      <div class="pag-r" id="r-pagination"></div>
+    </div>
+    <div class="r-footer">Diagnóstico gerado por <b>Robleddo Consulting</b> · <span id="r-footer-date"></span></div>
+  </div>
+</div>
+
+<script>
+const PRESET_COLORS=["#e74c3c","#27ae60","#3498db","#9b59b6","#f39c12","#1abc9c","#e91e63","#00bcd4","#ff5722","#607d8b"];
+const S={comments:[],headers:[],excelRows:[],selectedColIdx:0,mainTags:[{name:"APOIADOR",description:"Apoia o prefeito, elogia a gestão, comentários positivos.",color:"#27ae60"},{name:"DETRATOR",description:"Critica o prefeito, desaprova a gestão, comentários negativos.",color:"#e74c3c"},{name:"NEUTRO",description:"Comentário sem posicionamento claro ou ambíguo.",color:"#7f8c8d"}],selectedColor:PRESET_COLORS[2],screenshot:null,screenshotDataUrl:null,themeTags:[],results:[],filterMain:"all",filterTheme:"all",currentPage:1,perPage:30,donutChart:null,analysisData:null,actionsDone:{},mainCounts:{},themeCounts:{},total:0};
+
+function pillClass(n){const u=n.toUpperCase();if(u.includes("APOIADOR")||u.includes("APOIO")||u.includes("POSITIVO"))return"p-pos";if(u.includes("DETRAT")||u.includes("NEGATIVO")||u.includes("CRITICA")||u.includes("CRÍTICA"))return"p-neg";if(u.includes("NEUTRO")||u.includes("INDEFINIDO"))return"p-neu";return"p-custom";}
+
+function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');if(id==='report-page'){}else{}}
+
+function getCsrf(){return document.cookie.split(';').map(c=>c.trim()).find(c=>c.startsWith('csrftoken='))?.split('=')[1]||'';}
+
+async function callClaude(prompt,jsonMode=false){const apiKey=document.getElementById('api-key-input').value.trim();const res=await fetch("/api/claude/",{method:"POST",headers:{"Content-Type":"application/json","X-CSRFToken":getCsrf()},body:JSON.stringify({prompt,jsonMode,apiKey})});const data=await res.json();if(data.error)throw new Error(data.error);return data.text||"";}
+
+function parseJSON(text){const clean=text.replace(/```json|```/g,"").trim();const match=clean.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);return JSON.parse(match?match[0]:clean);}
+
+async function generateThematicTags(sample,criterion,caption){
+const captionBlock=caption?`\nLEGENDA DA POSTAGEM:\n"${caption}"\n`:'';
+const prompt=`Você é um analista político especializado em redes sociais brasileiras.
+Analise os comentários abaixo e gere EXATAMENTE 8 tags temáticas DISTINTAS, BEM DISTRIBUÍDAS e com SENTIDO POLÍTICO EXPLÍCITO.
+${captionBlock}
+REGRAS OBRIGATÓRIAS:
+- As 8 tags devem ser DIFERENTES entre si, sem sobreposição de assuntos
+- CADA NOME DE TAG deve deixar EXPLÍCITO o sentido político — nunca use nomes neutros ou vagos
+- ERRADO: "Comparação Carlos Eduardo" | CERTO: "Nostalgia de Carlos Eduardo vs gestão atual"
+- ERRADO: "Críticas a Festas" | CERTO: "Rejeição ao Carnaval como prioridade"
+- ERRADO: "Saúde" | CERTO: "Denúncia de colapso na saúde pública"
+- ERRADO: "Apoio ao prefeito" | CERTO: "Elogios à gestão e reeleição de Paulinho"
+- O nome deve deixar claro SE É A FAVOR ou CONTRA, e em relação A QUEM ou A QUÊ
+- Cada tag: 3 a 7 palavras com posicionamento político claro
+- Inclua o campo sentiment: positive ou negative
+
+Critério: ${criterion}
+Comentários (amostra de ${sample.length}):
+${sample.map((c,i)=>`${i+1}. ${c}`).join("\n")}
+
+Retorne SOMENTE este JSON:
+{"tags": [{"name": "nome com sentido político explícito", "description": "quando usar esta tag especificamente", "sentiment": "positive ou negative"}]}`;
+const raw=await callClaude(prompt,true);
+return(parseJSON(raw).tags||[]).slice(0,8);}
+
+async function classifyBatch(batch,mainTags,themeTags){
+const prompt=`Você é um classificador preciso de comentários políticos em português.
+
+REGRAS:
+1. Leia o comentário com atenção antes de classificar
+2. Escolha o tema que MELHOR descreve o ASSUNTO PRINCIPAL
+3. Distribua entre todos os temas conforme o conteúdo
+4. Nunca repita o mesmo tema para comentários com assuntos claramente diferentes
+5. EMOJIS DE RISADA (😂🤣😹🤡): quando a postagem é sobre atos do prefeito ou da prefeitura, emojis de risada SEM texto são DETRATORES — representam escárnio e deboche, não neutralidade
+
+TAGS PRINCIPAIS:
+${mainTags.map(t=>`- "${t.name}": ${t.description}`).join("\n")}
+
+TAGS TEMÁTICAS:
+${themeTags.map((t,i)=>`${i+1}. "${t.name}": ${t.description}`).join("\n")}
+
+Retorne SOMENTE este JSON:
+{"results": [{"main": "nome exato da tag principal", "theme": "nome exato do tema"}]}
+
+COMENTÁRIOS (${batch.length} itens):
+${batch.map((c,i)=>`${i+1}. ${c}`).join("\n")}`;
+for(let a=0;a<3;a++){try{const raw=await callClaude(prompt,true);const results=parseJSON(raw).results||[];const mn=mainTags.map(t=>t.name);const tn=themeTags.map(t=>t.name);return batch.map((_,i)=>{const r=results[i]||{};return{main:mn.includes(r.main)?r.main:mn[0],theme:tn.includes(r.theme)?r.theme:tn[0]};});}catch(e){if(a===2)throw e;await new Promise(r=>setTimeout(r,1000*(a+1)));}}}
+
+async function generateSummary(mainCounts,themeCounts,total,criterion,context,caption){
+const dist=Object.entries(mainCounts).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k}: ${v} (${total?Math.round(v/total*100):0}%)`).join(", ");
+const topThemes=Object.entries(themeCounts).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v])=>`"${k}": ${Math.round(v/total*100)}%`).join(", ");
+const captionBlock=caption?`\nLEGENDA DA POSTAGEM (use para contextualizar a análise):\n"${caption}"\n`:'';
+const prompt=`Você é um analista político estratégico sênior. Com base nos dados abaixo, gere análise e plano de ação CONCRETO.
+
+DADOS:
+Contexto: ${context}
+Critério: ${criterion}${captionBlock}
+Total de comentários: ${total}
+Distribuição por tag: ${dist}
+Top temas: ${topThemes}
+
+INSTRUÇÕES — Gere EXATAMENTE 2 seções separadas por "---ACOES---":
+
+SEÇÃO 1 — ANÁLISE (3-4 linhas):
+- Interpretação política do cenário SOMENTE com base nos comentários desta postagem
+- Use sempre "nesta postagem", "os comentários indicam" — nunca extrapole para a população geral
+- Destaque tema dominante, vetor de risco e ativo favorável
+
+SEÇÃO 2 — AÇÕES (após "---ACOES---"), retorne JSON:
+[{"num":1,"tipo":"Comunicação de Crise","prazo":"hoje","titulo":"Título em 1 linha","descricao":"O que fazer, como fazer, meta mensurável em 2-3 linhas."}]
+
+Gere 3 a 4 ações. prazo deve ser: "hoje", "7 dias", "14 dias" ou "contínuo".
+tipo deve ser: "Comunicação de Crise", "Estratégia de Campanha", "Conteúdo Orgânico" ou "Monitoramento".`;
+return await callClaude(prompt);}
+
+document.getElementById('screenshot-input').addEventListener('change',function(e){const file=e.target.files[0];if(!file)return;S.screenshot=file;const reader=new FileReader();reader.onload=ev=>{S.screenshotDataUrl=ev.target.result;document.getElementById('screenshot-placeholder').style.display='none';document.getElementById('screenshot-preview-wrap').style.display='block';document.getElementById('screenshot-preview-img').src=ev.target.result;document.getElementById('screenshot-name').textContent=file.name;document.getElementById('screenshot-remove').style.display='inline';document.getElementById('screenshot-zone').classList.add('has-file');};reader.readAsDataURL(file);});
+
+function removeScreenshot(){S.screenshot=null;S.screenshotDataUrl=null;document.getElementById('screenshot-placeholder').style.display='block';document.getElementById('screenshot-preview-wrap').style.display='none';document.getElementById('screenshot-remove').style.display='none';document.getElementById('screenshot-zone').classList.remove('has-file');document.getElementById('screenshot-input').value='';}
+
+document.getElementById('excel-input').addEventListener('change',function(e){const file=e.target.files[0];if(!file)return;document.getElementById('excel-filename').textContent=file.name;const reader=new FileReader();reader.onload=ev=>{const wb=XLSX.read(ev.target.result,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const raw=XLSX.utils.sheet_to_json(ws,{header:1});if(!raw||raw.length<2)return;const headers=raw[0].map(h=>String(h||""));const dataRows=raw.slice(1);S.headers=headers;S.excelRows=dataRows;const known=["text","texto","comment","comentario","comentário","body","message"];let best=-1;for(const name of known){const idx=headers.findIndex(h=>h.toLowerCase().trim()===name);if(idx!==-1){best=idx;break;}}if(best===-1){let bs=-1;headers.forEach((_,ci)=>{const vals=dataRows.map(r=>String(r[ci]||"")).filter(v=>v.length>3);if(!vals.length)return;if(vals.filter(v=>v.startsWith("http")).length/vals.length>0.5)return;const avg=vals.reduce((a,v)=>a+v.length,0)/vals.length;if(avg>bs){bs=avg;best=ci;}});}if(best===-1)best=0;S.selectedColIdx=best;loadComments();const sel=document.getElementById('col-selector');sel.innerHTML=headers.map((h,i)=>`<option value="${i}"${i===best?' selected':''}>${h}</option>`).join('');document.getElementById('col-selector-wrap').style.display='block';updateColPreview();document.getElementById('excel-zone').classList.add('has-file');};reader.readAsArrayBuffer(file);});
+
+document.getElementById('col-selector').addEventListener('change',function(){S.selectedColIdx=parseInt(this.value);loadComments();updateColPreview();});
+
+function loadComments(){const ci=S.selectedColIdx;S.comments=S.excelRows.map(r=>String(r[ci]||"").trim()).filter(s=>s.length>3&&!s.startsWith("http"));document.getElementById('excel-placeholder').style.display='none';document.getElementById('excel-loaded').style.display='block';document.getElementById('excel-count').textContent=`${S.comments.length} comentários encontrados`;document.getElementById('col-count').textContent=`(${S.comments.length} itens)`;checkCanExecute();}
+
+function updateColPreview(){const ci=S.selectedColIdx;const preview=S.excelRows.slice(0,2).map(r=>String(r[ci]||"")).filter(Boolean);const el=document.getElementById('col-preview');if(!preview.length){el.style.display='none';return;}el.style.display='block';el.innerHTML=`<div style="color:var(--t4);font-size:10px;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;">Prévia:</div>`+preview.map(v=>v.startsWith("http")?`<div style="color:#e74c3c;font-size:12px;">⚠ URL — selecione outra coluna</div>`:`<div style="color:var(--t2);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">"${v.slice(0,90)}${v.length>90?'…':''}"</div>`).join('');}
+
+document.getElementById('criterion-input').addEventListener('input',function(){const el=document.getElementById('criterion-counter');el.textContent=`${this.value.length} / 30 caracteres mínimos`;el.style.color=this.value.length>=30?'var(--pos)':'var(--t4)';checkCanExecute();});
+
+function renderTags(){document.getElementById('tags-list').innerHTML=S.mainTags.map((t,i)=>`<div class="tag-item"><div style="width:10px;height:10px;border-radius:50%;background:${t.color};flex-shrink:0;"></div><div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;">${t.name}</div><div style="color:var(--t3);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.description}</div></div><button onclick="removeTag(${i})" style="background:none;border:none;color:var(--neg);font-size:16px;padding:0 4px;">×</button></div>`).join('');}
+
+function addTag(){const name=document.getElementById('new-tag-name').value.trim().toUpperCase();const desc=document.getElementById('new-tag-desc').value.trim();if(!name)return;S.mainTags.push({name,description:desc,color:S.selectedColor});document.getElementById('new-tag-name').value='';document.getElementById('new-tag-desc').value='';renderTags();checkCanExecute();}
+
+function removeTag(i){S.mainTags.splice(i,1);renderTags();checkCanExecute();}
+
+function renderColorPicker(){document.getElementById('color-picker').innerHTML=PRESET_COLORS.map(c=>`<div onclick="selectColor('${c}')" style="width:20px;height:20px;border-radius:50%;background:${c};cursor:pointer;border:2px solid ${c===S.selectedColor?'#fff':'transparent'};transition:border .15s;"></div>`).join('');}
+
+function selectColor(c){S.selectedColor=c;renderColorPicker();}
+
+function checkCanExecute(){const apiKey=document.getElementById('api-key-input').value.trim();const criterion=document.getElementById('criterion-input').value;document.getElementById('execute-btn').disabled=!(apiKey&&S.comments.length>0&&criterion.length>=30&&S.mainTags.length>=1);}
+
+const STEPS=[{id:'tags',label:'Gerando temas identificados'},{id:'classify',label:'Classificando comentários'},{id:'summary',label:'Análise estratégica e ações'}];
+
+function setProgress(pct,log,stepId){document.getElementById('progress-fill').style.width=pct+'%';document.getElementById('progress-pct').textContent=pct+'%';document.getElementById('processing-log').textContent=log;document.getElementById('steps-list').innerHTML=STEPS.map(s=>{const si=STEPS.findIndex(x=>x.id===stepId),ii=STEPS.findIndex(x=>x.id===s.id);const done=ii<si||pct===100,active=s.id===stepId&&pct<100;const icon=done?'✅':active?'⏳':'⬜';const color=done?'var(--pos)':active?'var(--brand)':'var(--t4)';return`<div class="step-item"><span>${icon}</span><span style="color:${color};font-size:13px;">${s.label}</span></div>`;}).join('');}
+
+async function executeAnalysis(){
+  const context=document.getElementById('context-input').value.trim();
+  const criterion=document.getElementById('criterion-input').value.trim();
+  const url=document.getElementById('url-input').value.trim();
+  const caption=document.getElementById('caption-input').value.trim();
+  showPage('processing-page');setProgress(5,'Iniciando análise...','tags');
+  try{
+    // summarize caption for display
+    let captionSummary=caption;
+    if(caption){
+      try{
+        const sumPrompt=`Resuma a legenda abaixo em no máximo 3 linhas curtas, mantendo os fatos principais e o tom jornalístico. Retorne apenas o resumo, sem aspas, sem introdução.\n\nLEGENDA:\n${caption}`;
+        captionSummary=await callClaude(sumPrompt);
+      }catch(e){captionSummary=caption.slice(0,200)+(caption.length>200?'…':'');}
+    }
+    const sample=S.comments.slice(0,40);
+    setProgress(10,'Gerando temas temáticos...','tags');
+    S.themeTags=await generateThematicTags(sample,criterion,caption);
+    setProgress(25,'Classificando comentários...','classify');
+    const batchSize=20;let results=[];const total=S.comments.length;
+    for(let i=0;i<total;i+=batchSize){const batch=S.comments.slice(i,i+batchSize);const classified=await classifyBatch(batch,S.mainTags,S.themeTags);results=[...results,...classified.map((c,j)=>({comment:S.comments[i+j],main:c.main,theme:c.theme}))];const pct=Math.round(25+((i+batch.length)/total)*55);setProgress(pct,`Classificados ${Math.min(i+batchSize,total)} de ${total}...`,'classify');}
+    S.results=results;
+    setProgress(82,'Análise estratégica e ações...','summary');
+    const mainCounts={},themeCounts={};
+    S.mainTags.forEach(t=>{mainCounts[t.name]=0;});S.themeTags.forEach(t=>{themeCounts[t.name]=0;});
+    results.forEach(r=>{if(mainCounts[r.main]!==undefined)mainCounts[r.main]++;if(themeCounts[r.theme]!==undefined)themeCounts[r.theme]++;});
+    const rawSummary=await generateSummary(mainCounts,themeCounts,total,criterion,context,caption);
+    const summaryData=parseSummaryAndActions(rawSummary);
+    S.analysisData=summaryData;
+    setProgress(100,'Diagnóstico concluído!','summary');
+    await new Promise(r=>setTimeout(r,600));
+    buildReport(results,S.mainTags,S.themeTags,mainCounts,themeCounts,total,summaryData,context,url,caption,captionSummary);
+  }catch(e){alert('Erro durante a análise: '+e.message);showPage('setup-page');}
+}
+
+function parseSummaryAndActions(raw){const parts=raw.split('---ACOES---');const summary=parts[0].trim();let actions=[];if(parts[1]){try{const jsonPart=parts[1].replace(/```json|```/g,"").trim();const match=jsonPart.match(/\[[\s\S]*\]/);if(match)actions=JSON.parse(match[0]);}catch(e){console.warn('Actions parse error',e);}}return{summary,actions};}
+
+function buildReport(results,mainTags,themeTags,mainCounts,themeCounts,total,summaryData,context,url,caption,captionSummary){
+  S.mainCounts=mainCounts; S.themeCounts=themeCounts; S.total=total;
+
+  // ── load history for deltas ──────────────────────────────
+  let prevSnap=null;
+  try{const hist=JSON.parse(localStorage.getItem('diagnostico_history')||'[]');if(hist.length>0)prevSnap=hist[hist.length-1];}catch(e){}
+
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  const timeStr=now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('r-header-sub').innerHTML=`Diagnóstico de Postagem <span style="color:#374151;">·</span> ${dateStr} <span style="color:#374151;">·</span> ${timeStr}`;
+  document.getElementById('r-footer-date').textContent=`${dateStr} às ${timeStr}`;
+  document.getElementById('r-post-title').textContent=context||'Postagem analisada';
+  const urlClean=url?url.replace('https://www.','').replace('https://',''):'';
+  const urlHandle=url?url.split('/p/')[0].replace('https://www.instagram.com/','@').replace('https://instagram.com/','@'):'';
+  document.getElementById('r-post-meta').innerHTML=`
+    ${urlHandle?`<div class="post-meta-item">👤 <strong style="color:var(--t1);">${urlHandle}</strong></div>`:''}
+    ${url?`<div class="post-meta-item">🔗 <a href="${url}" target="_blank" rel="noopener">${urlClean.slice(0,52)}${urlClean.length>52?'…':''}</a></div>`:''}
+    <div class="post-meta-item">📅 ${now.toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})}</div>
+    ${captionSummary?`<div class="post-meta-item" style="align-items:flex-start;">📝 <span style="color:var(--t3);font-size:11px;line-height:1.6;">${captionSummary}</span></div>`:''}
+  `;
+  document.getElementById('r-post-stats').innerHTML=`
+    <div class="post-stat"><div class="post-stat-val">${total}</div><div class="post-stat-lbl">Comentários</div></div>
+    <div class="post-stat"><div class="post-stat-val" style="color:var(--neg);">${mainCounts[mainTags.find(t=>t.name.toUpperCase().includes('DETRAT'))?.name]||0}</div><div class="post-stat-lbl">Detratores</div></div>
+    <div class="post-stat"><div class="post-stat-val" style="color:var(--pos);">${mainCounts[mainTags.find(t=>t.name.toUpperCase().includes('APOIADOR')||t.name.toUpperCase().includes('APOIO'))?.name]||0}</div><div class="post-stat-lbl">Apoiadores</div></div>
+  `;
+  const thumbEl=document.getElementById('r-thumb');
+  if(S.screenshotDataUrl){thumbEl.innerHTML=`<img src="${S.screenshotDataUrl}">`;}
+  else{thumbEl.innerHTML=`<span class="post-screenshot-empty">📸</span>`;}
+
+  // ── rejection score ──────────────────────────────────────
+  const detName=mainTags.find(t=>t.name.toUpperCase().includes('DETRAT'))?.name||mainTags[1]?.name;
+  const detCount=detName?(mainCounts[detName]||0):0;
+  const rejPct=total?Math.round(detCount/total*100):0;
+  let scoreLabel,badgeText,badgeCls;
+  if(rejPct>=55){scoreLabel='Cenário Crítico';badgeText='⚠ Atenção Alta';badgeCls='badge-crit';}
+  else if(rejPct>=35){scoreLabel='Cenário de Atenção';badgeText='⚡ Monitorar';badgeCls='badge-warn';}
+  else{scoreLabel='Cenário Favorável';badgeText='✓ Estável';badgeCls='badge-ok';}
+  const scoreEl=document.getElementById('r-score-val');
+  scoreEl.textContent=rejPct+'%';
+  scoreEl.style.color=rejPct>=55?'var(--neg)':rejPct>=35?'var(--warn)':'var(--pos)';
+  document.getElementById('r-score-desc').textContent=scoreLabel;
+  const badgeEl=document.getElementById('r-post-badge');
+  badgeEl.textContent=badgeText;badgeEl.className=`post-badge ${badgeCls}`;
+  const markerPos=Math.min(95,Math.max(5,rejPct*1.2));
+  document.getElementById('r-therm-marker').style.left=markerPos+'%';
+  const capEl=document.getElementById('r-therm-cap');
+  // previous delta on thermometer
+  if(prevSnap&&prevSnap.rejPct!==undefined){
+    const diff=rejPct-prevSnap.rejPct;
+    const sign=diff>0?'▲':'▼';
+    const diffColor=diff>0?'var(--neg)':'var(--pos)';
+    capEl.innerHTML=`Rejeição em ${rejPct}%${rejPct>=55?' — acima do limiar crítico':''} <span style="color:${diffColor};font-weight:800;">${sign} ${Math.abs(diff)}pts vs análise anterior</span>`;
+  } else {
+    capEl.textContent=`Rejeição em ${rejPct}%${rejPct>=55?' — acima do limiar crítico':''}`;
+  }
+  capEl.style.color=rejPct>=55?'var(--neg)':rejPct>=35?'var(--warn)':'var(--pos)';
+
+  // ── chips ───────────────────────────────────────────────
+  const sortedThemes=Object.entries(themeCounts).sort((a,b)=>b[1]-a[1]);
+  const topNeg=sortedThemes.find(([k])=>themeTags.find(t=>t.name===k&&t.sentiment==='negative'));
+  const topPos=sortedThemes.find(([k])=>themeTags.find(t=>t.name===k&&t.sentiment==='positive'));
+  const rising=sortedThemes.find(([k,v])=>themeTags.find(t=>t.name===k&&t.sentiment==='negative')&&v/total<0.12&&sortedThemes.indexOf(sortedThemes.find(x=>x[0]===k))>2);
+  document.getElementById('r-chips').innerHTML=[
+    topNeg?`<div class="chip"><div class="chip-dot" style="background:var(--neg);"></div>Dominante: ${topNeg[0]}</div>`:'',
+    rising?`<div class="chip"><div class="chip-dot" style="background:var(--warn);"></div>Em escalada: ${rising[0]}</div>`:'',
+    topPos?`<div class="chip"><div class="chip-dot" style="background:var(--pos);"></div>Ativo: ${topPos[0]}</div>`:'',
+  ].filter(Boolean).join('');
+
+  // ── stat cards with history deltas ───────────────────────
+  const sc=document.getElementById('r-stat-cards');sc.innerHTML='';
+  mainTags.forEach(tag=>{
+    const cnt=mainCounts[tag.name]||0;
+    const pct=total?Math.round(cnt/total*100):0;
+    const n=tag.name.toUpperCase();
+    let cls='neu';
+    if(n.includes('APOIADOR')||n.includes('APOIO')||n.includes('POSITIVO'))cls='pos';
+    else if(n.includes('DETRAT')||n.includes('NEGATIVO'))cls='neg';
+    if(cls==='neu')return; // ocultar indefinidos dos cards de stat
+    let deltaHtml='';
+    if(prevSnap&&prevSnap.mainCounts&&prevSnap.mainCounts[tag.name]!==undefined&&prevSnap.total){
+      const prevPct=Math.round((prevSnap.mainCounts[tag.name]||0)/prevSnap.total*100);
+      const diff=pct-prevPct;
+      if(diff>0){
+        const worse=(cls==='neg');
+        deltaHtml=`<span class="${worse?'delta-up':'delta-down'}">▲ +${diff}pts</span>`;
+      } else if(diff<0){
+        const better=(cls==='neg');
+        deltaHtml=`<span class="${better?'delta-down':'delta-up'}">▼ ${diff}pts</span>`;
+      } else {
+        deltaHtml=`<span class="delta-same">= estável</span>`;
+      }
+    }
+    sc.innerHTML+=`<div class="sc ${cls}" style="cursor:pointer;" onclick="setFilter('${tag.name}',null)">
+      <div class="sc-label">${tag.name}</div>
+      <div style="display:flex;align-items:baseline;gap:4px;flex-wrap:wrap;">
+        <div class="sc-num">${cnt}</div>${deltaHtml}
+      </div>
+      <div class="sc-sub">${pct}% dos comentários</div>
+    </div>`;
+  });
+  sc.innerHTML+=`<div class="sc tot"><div class="sc-label">Total</div><div class="sc-num">${total}</div><div class="sc-sub">comentários analisados</div></div>`;
+
+  // ── summary ──────────────────────────────────────────────
+  document.getElementById('r-summary-text').innerHTML=summaryData.summary.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>');
+
+  // ── actions with checkboxes ───────────────────────────────
+  const actEl=document.getElementById('r-actions');
+  if(summaryData.actions&&summaryData.actions.length>0){
+    actEl.innerHTML=summaryData.actions.map(a=>{
+      const pc=a.prazo==='hoje'?'prazo-hoje':a.prazo==='7 dias'?'prazo-7':a.prazo==='14 dias'?'prazo-30':'prazo-cont';
+      const pl=a.prazo==='hoje'?'Hoje':a.prazo==='7 dias'?'7 dias':a.prazo==='14 dias'?'14 dias':'Contínuo';
+      const aid=`action_${a.num}`;
+      const isDone=S.actionsDone[aid]||false;
+      return`<div class="action-item${isDone?' done':''}" id="ai_${aid}">
+        <div class="action-left">
+          <div class="action-n">${a.num||'•'}</div>
+          <div class="prazo ${pc}">${pl}</div>
+        </div>
+        <div style="flex:1;">
+          <div class="action-type">${a.tipo||''}</div>
+          <div class="action-title">${a.titulo||''}</div>
+          <div class="action-desc">${a.descricao||''}</div>
+        </div>
+        <div class="action-check${isDone?' checked':''}" onclick="toggleActionDone('${aid}')" title="Marcar como concluída">${isDone?'✓':''}</div>
+      </div>`;
+    }).join('');
+  } else {
+    actEl.innerHTML=`<div style="color:var(--t3);font-size:13px;padding:10px;">Nenhuma ação gerada.</div>`;
+  }
+
+  // ── clickable bars ───────────────────────────────────────
+  const mono=['#1E293B','#334155','#475569','#475569','#64748B','#94A3B8','#94A3B8','#CBD5E1'];
+  const sortedTF=[...themeTags].sort((a,b)=>(themeCounts[b.name]||0)-(themeCounts[a.name]||0));
+  const maxT=Math.max(...sortedTF.map(t=>themeCounts[t.name]||0),1);
+  document.getElementById('r-bars').innerHTML=sortedTF.map((t,i)=>{
+    const cnt=themeCounts[t.name]||0;
+    const pct=total?Math.round(cnt/total*100):0;
+    const w=Math.round(cnt/maxT*100);
+    const dotC=t.sentiment==='positive'?'var(--pos)':'var(--neg)';
+    const fillC=t.sentiment==='positive'?'#16653488':mono[Math.min(i,7)];
+    return`<div class="bar-row" id="bar_${i}" onclick="setThemeFilter('${t.name}',${i})">
+      <div class="bar-dot" style="background:${dotC};"></div>
+      <div class="bar-name">${t.name}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${fillC};"></div></div>
+      <div class="bar-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+  // store sorted theme tags for bar indexing
+  S._sortedTF=sortedTF;
+
+  // ── clickable donut ──────────────────────────────────────
+  const donutCounts=mainTags.map(t=>mainCounts[t.name]||0);
+  const donutColors=mainTags.map(t=>{const n=t.name.toUpperCase();if(n.includes('APOIADOR')||n.includes('APOIO')||n.includes('POSITIVO'))return'#166534';if(n.includes('DETRAT')||n.includes('NEGATIVO'))return'#B91C1C';return'#D1D5DB';});
+  if(S.donutChart)S.donutChart.destroy();
+  const donutCanvas=document.getElementById('r-donut');
+  S.donutChart=new Chart(donutCanvas.getContext('2d'),{
+    type:'doughnut',
+    data:{datasets:[{data:donutCounts,backgroundColor:donutColors,borderWidth:3,borderColor:'#fff',hoverOffset:6,hoverBorderWidth:3}]},
+    options:{
+      responsive:false,
+      width:160, height:160,
+      cutout:'62%',
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${mainTags[ctx.dataIndex].name}: ${ctx.parsed} (${total?Math.round(ctx.parsed/total*100):0}%)`}}},
+      onClick:(evt,elements)=>{
+        if(!elements.length){setFilter('all',null);return;}
+        const idx=elements[0].index;
+        const tagName=mainTags[idx].name;
+        S.filterMain===tagName?setFilter('all',null):setFilter(tagName,null);
+      }
+    }
+  });
+  donutCanvas.style.width='160px';
+  donutCanvas.style.height='160px';
+  // center text
+  const centerEl=document.getElementById('donut-center-text');
+  if(centerEl){
+    const topTag=mainTags.reduce((a,b)=>(mainCounts[a.name]||0)>(mainCounts[b.name]||0)?a:b);
+    const topPct=total?Math.round((mainCounts[topTag.name]||0)/total*100):0;
+    const topColor=donutColors[mainTags.indexOf(topTag)];
+    centerEl.innerHTML=`<span class="donut-center-label">Total</span><span class="donut-center-value" style="color:${topColor};">${topPct}%</span><span class="donut-center-sub">${topTag.name}</span>`;
+  }
+
+  // ── legend (clickable) ────────────────────────────────────
+  document.getElementById('r-leg').innerHTML=mainTags.map((t,i)=>{
+    const cnt=mainCounts[t.name]||0;const pct=total?Math.round(cnt/total*100):0;
+    return`<div class="leg-row" id="leg_${i}" onclick="setFilter('${t.name}',null)" title="Filtrar por ${t.name}">
+      <div class="leg-dot" style="background:${donutColors[i]};"></div>
+      <span class="leg-label">${t.name}</span>
+      <span class="leg-val">${cnt}</span>
+      <span class="leg-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+
+  // ── filter buttons ────────────────────────────────────────
+  document.getElementById('r-filt-row').innerHTML=
+    `<button class="fb on" onclick="setFilter('all',event)">Todos</button>`+
+    mainTags.map(t=>`<button class="fb" onclick="setFilter('${t.name}',event)">${t.name.charAt(0)+t.name.slice(1).toLowerCase()}</button>`).join('');
+
+  S.filterMain='all';S.filterTheme='all';S.currentPage=1;
+  applyFilters();showPage('report-page');
+  saveHistory(mainCounts,themeCounts,total,rejPct);
+  saveState();
+}
+
+function setFilter(name,e){
+  S.filterMain=name;
+  // update filter buttons
+  document.querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));
+  if(e&&e.target)e.target.classList.add('on');
+  else if(name==='all'){const first=document.querySelector('.fb');if(first)first.classList.add('on');}
+  // update leg-rows
+  document.querySelectorAll('.leg-row').forEach(r=>r.classList.remove('active'));
+  if(name!=='all'){S.mainTags.forEach((t,i)=>{if(t.name===name){const lr=document.getElementById('leg_'+i);if(lr)lr.classList.add('active');}});}
+  S.currentPage=1;
+  applyFilters();
+}
+
+function setThemeFilter(themeName,barIdx){
+  S.filterTheme=S.filterTheme===themeName?'all':themeName;
+  // update bar highlights
+  if(S._sortedTF){S._sortedTF.forEach((_,i)=>{const b=document.getElementById('bar_'+i);if(b)b.classList.toggle('active',i===barIdx&&S.filterTheme!=='all');});}
+  // update badge
+  const badge=document.getElementById('r-theme-filter-badge');
+  if(S.filterTheme!=='all'&&badge){
+    badge.style.display='inline-flex';
+    badge.innerHTML=`<span class="theme-filter-active" onclick="clearThemeFilter()">✕ ${S.filterTheme}</span>`;
+  } else if(badge){badge.style.display='none';}
+  S.currentPage=1;
+  applyFilters();
+}
+
+function clearThemeFilter(){
+  S.filterTheme='all';
+  if(S._sortedTF)S._sortedTF.forEach((_,i)=>{const b=document.getElementById('bar_'+i);if(b)b.classList.remove('active');});
+  const badge=document.getElementById('r-theme-filter-badge');
+  if(badge)badge.style.display='none';
+  S.currentPage=1;
+  applyFilters();
+}
+
+function toggleActionDone(aid){
+  S.actionsDone[aid]=!S.actionsDone[aid];
+  const item=document.getElementById('ai_'+aid);
+  const check=item?.querySelector('.action-check');
+  if(item)item.classList.toggle('done',S.actionsDone[aid]);
+  if(check){check.classList.toggle('checked',S.actionsDone[aid]);check.textContent=S.actionsDone[aid]?'✓':'';}
+  saveState();
+}
+
+async function copyFiltered(){
+  const search=(document.getElementById('search-input')?.value||'').toLowerCase();
+  const filtered=S.results.filter(r=>{
+    if(S.filterMain!=='all'&&r.main!==S.filterMain)return false;
+    if(S.filterTheme!=='all'&&r.theme!==S.filterTheme)return false;
+    if(search&&!r.comment.toLowerCase().includes(search))return false;
+    return true;
+  });
+  const text=filtered.map((r,i)=>`${i+1}. [${r.main}] ${r.comment}`).join('\n');
+  try{
+    await navigator.clipboard.writeText(text);
+    const btn=document.getElementById('copy-btn');
+    btn.textContent='✓ Copiado!';btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='📋 Copiar';btn.classList.remove('copied');},2000);
+  }catch(e){alert('Não foi possível copiar. Tente selecionar manualmente.');}
+}
+
+function saveHistory(mainCounts,themeCounts,total,rejPct){
+  try{
+    const hist=JSON.parse(localStorage.getItem('diagnostico_history')||'[]');
+    hist.push({date:new Date().toISOString(),mainCounts,themeCounts,total,rejPct});
+    // keep last 10
+    if(hist.length>10)hist.shift();
+    localStorage.setItem('diagnostico_history',JSON.stringify(hist));
+  }catch(e){console.warn('saveHistory:',e);}
+}
+
+function applyFilters(){
+  const search=(document.getElementById('search-input')?.value||'').toLowerCase();
+  const filtered=S.results.filter(r=>{
+    if(S.filterMain!=='all'&&r.main!==S.filterMain)return false;
+    if(S.filterTheme!=='all'&&r.theme!==S.filterTheme)return false;
+    if(search&&!r.comment.toLowerCase().includes(search))return false;
+    return true;
+  });
+  document.getElementById('r-count').textContent=filtered.length+' registros';
+  const totalPages=Math.ceil(filtered.length/S.perPage)||1;
+  if(S.currentPage>totalPages)S.currentPage=1;
+  const paginated=filtered.slice((S.currentPage-1)*S.perPage,S.currentPage*S.perPage);
+  const mainTagMap=Object.fromEntries(S.mainTags.map(t=>[t.name,t]));
+  document.getElementById('r-tbody').innerHTML=paginated.map((r,i)=>{
+    const num=(S.currentPage-1)*S.perPage+i+1;
+    const tag=mainTagMap[r.main]||{name:r.main,color:'#888'};
+    const pc=pillClass(r.main);
+    const pillEl=pc!=='p-custom'?`<div class="pill ${pc}">${r.main}</div>`:`<div class="pill p-custom" style="background:${tag.color}22;color:${tag.color};border:1px solid ${tag.color}44;">${r.main}</div>`;
+    const comment=r.comment.length>160?r.comment.slice(0,160)+'…':r.comment;
+    return`<div class="r-tr"><span class="tr-num">${num}</span><span class="tr-comment">${comment}</span><span>${pillEl}</span><span><div class="tpill${S.filterTheme===r.theme?' active-theme':''}" style="${S.filterTheme===r.theme?'background:var(--brand-bg);border-color:var(--brand);color:var(--brand);':''}">${r.theme}</div></span></div>`;
+  }).join('')||`<div style="padding:40px;text-align:center;color:var(--t4);font-size:13px;">Nenhum comentário encontrado.</div>`;
+  document.getElementById('r-pagination').innerHTML=totalPages>1?`<button class="pb" onclick="changePage(${S.currentPage-1})" ${S.currentPage===1?'disabled':''}>‹</button><span style="font-size:13px;color:var(--t3);">Página ${S.currentPage} de ${totalPages}</span><button class="pb" onclick="changePage(${S.currentPage+1})" ${S.currentPage===totalPages?'disabled':''}>›</button>`:'';
+}
+
+function changePage(p){S.currentPage=p;applyFilters();}
+
+function exportExcel(){const rows=S.results.map((r,i)=>({"#":i+1,"Comentário":r.comment,"Tag Principal":r.main,"Tema":r.theme}));const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Diagnóstico");XLSX.writeFile(wb,`diagnostico-${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.xlsx`);}
+
+async function exportPDF(){
+  window.print();
+}
+
+async function shareReport(){
+  const btn=document.getElementById('btn-share');
+  const orig=btn.textContent;
+  btn.textContent='Salvando...';btn.disabled=true;
+  try{
+    const payload={
+      results:S.results,mainTags:S.mainTags,themeTags:S.themeTags,
+      mainCounts:S.mainCounts,themeCounts:S.themeCounts,total:S.total,
+      analysisData:S.analysisData,screenshotDataUrl:S.screenshotDataUrl||null,
+      postTitle:document.getElementById('r-post-title')?.innerText||'',
+      postMeta:document.getElementById('r-post-meta')?.innerHTML||'',
+      postStats:document.getElementById('r-post-stats')?.innerHTML||'',
+      postBadge:document.getElementById('r-post-badge')?.innerText||'',
+    };
+    const res=await fetch('/save-report/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},body:JSON.stringify(payload)});
+    const json=await res.json();
+    if(json.uid){
+      const url=`${location.origin}/report/${json.uid}/`;
+      await navigator.clipboard.writeText(url);
+      btn.textContent='✅ Link copiado!';
+      setTimeout(()=>{btn.textContent=orig;btn.disabled=false;},3000);
+    }else{throw new Error(json.error||'Erro desconhecido');}
+  }catch(e){alert('Erro ao gerar link: '+e.message);btn.textContent=orig;btn.disabled=false;}
+}
+function getCookie(name){const v=document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)');return v?v.pop():'';}
+
+function newAnalysis(){localStorage.removeItem('diagnostico_state');S.filterMain='all';S.filterTheme='all';showPage('setup-page');document.getElementById('header-actions').innerHTML='';}
+
+function saveState(){try{localStorage.setItem('diagnostico_state',JSON.stringify({results:S.results,mainTags:S.mainTags,themeTags:S.themeTags,analysisData:S.analysisData,actionsDone:S.actionsDone,context:document.getElementById('r-post-title').textContent,url:'',screenshotDataUrl:S.screenshotDataUrl||''}));}catch(e){console.warn('saveState:',e);}}
+
+function restoreState(){try{const raw=localStorage.getItem('diagnostico_state');if(!raw)return;const snap=JSON.parse(raw);if(!snap.results||!snap.results.length)return;S.results=snap.results;S.mainTags=snap.mainTags;S.themeTags=snap.themeTags;S.analysisData=snap.analysisData;S.actionsDone=snap.actionsDone||{};if(snap.screenshotDataUrl)S.screenshotDataUrl=snap.screenshotDataUrl;const mc={},tc={};S.mainTags.forEach(t=>{mc[t.name]=0;});S.themeTags.forEach(t=>{tc[t.name]=0;});S.results.forEach(r=>{if(mc[r.main]!==undefined)mc[r.main]++;if(tc[r.theme]!==undefined)tc[r.theme]++;});buildReport(S.results,S.mainTags,S.themeTags,mc,tc,S.results.length,snap.analysisData||{summary:'Análise restaurada do cache.',actions:[]},snap.context||'',snap.url||'');}catch(e){console.warn('restoreState:',e);}}
+
+renderTags();renderColorPicker();restoreState();
+</script>
+</body>
+</html>
+HTMLEOF
+echo "done"
+wc -l /home/claude/diagnostico_django_v2/diagnostico/templates/diagnostico/index.html
