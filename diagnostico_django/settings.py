@@ -48,9 +48,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 
+
+import dj_database_url
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default='sqlite:///db.sqlite3',
+        conn_max_age=600
+    )
 }
