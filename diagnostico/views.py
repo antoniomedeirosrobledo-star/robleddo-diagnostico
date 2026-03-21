@@ -25,7 +25,7 @@ def save_report(request):
 
 def view_report(request, uid):
     report = get_object_or_404(Report, uid=uid)
-    return render(request, 'diagnostico/report.html', {'report_data': json.dumps(report.data)})
+   return render(request, 'diagnostico/report.html', {'report_data': report.data})
 
 
 @csrf_exempt
