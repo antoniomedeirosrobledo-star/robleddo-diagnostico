@@ -754,7 +754,7 @@ renderTags();renderColorPicker();restoreState();
 <script>
 // Auto-render report from server data
 window.addEventListener('DOMContentLoaded', function() {
-  const data = {report_data};
+  const data = {{ report_data|safe }};
   S.results = data.results || [];
   S.mainTags = data.mainTags || [];
   S.themeTags = data.themeTags || [];
